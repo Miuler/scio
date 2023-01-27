@@ -87,6 +87,10 @@ val algebraVersion = "2.9.0"
 val annoy4sVersion = "0.10.0"
 val annoyVersion = "0.2.6"
 val breezeVersion = "2.1.0"
+val bsonVersion = "4.8.1"
+val cosmosVersion = "4.37.1"
+val cosmosContainerVersion = "1.17.5"
+val scribeVersion = "3.10.7"
 val caffeineVersion = "2.9.3"
 val cassandraDriverVersion = "3.11.3"
 val cassandraVersion = "3.11.13"
@@ -156,9 +160,7 @@ ThisBuild / tpolecatDevModeOptions ~= { opts =>
   opts.filterNot(excludes).union(extras)
 }
 
-ThisBuild / doc / tpolecatDevModeOptions ++= Set(
-  Scalac.docNoJavaCommentOption
-)
+ThisBuild / doc / tpolecatDevModeOptions ++= Set(Scalac.docNoJavaCommentOption)
 
 ThisBuild / scalafixScalaBinaryVersion := CrossVersion.binaryScalaVersion(scalaVersion.value)
 val excludeLint = SettingKey[Set[Def.KeyedInitialize[_]]]("excludeLintKeys")
@@ -199,9 +201,7 @@ lazy val keepExistingHeader =
   HeaderCommentStyle.cStyleBlockComment.copy(commentCreator = new CommentCreator() {
     override def apply(text: String, existingText: Option[String]): String =
       existingText
-        .getOrElse(
-          HeaderCommentStyle.cStyleBlockComment.commentCreator(text)
-        )
+        .getOrElse(HeaderCommentStyle.cStyleBlockComment.commentCreator(text))
         .trim()
   })
 
@@ -217,9 +217,7 @@ val commonSettings = Def
     inTask(doc)(TpolecatPlugin.projectSettings),
     javacOptions ++= Seq("-source", "1.8", "-target", "1.8", "-Xlint:unchecked"),
     Compile / doc / javacOptions := Seq("-source", "1.8"),
-    excludeDependencies ++= Seq(
-      "org.apache.beam" % "beam-sdks-java-io-kafka"
-    ),
+    excludeDependencies ++= Seq("org.apache.beam" % "beam-sdks-java-io-kafka"),
     resolvers ++= Resolver.sonatypeOssRepos("public"),
     Test / javaOptions += "-Dscio.ignoreVersionWarning=true",
     Test / testOptions += Tests.Argument("-oD"),
@@ -240,9 +238,7 @@ val commonSettings = Def
     coverageHighlighting := true,
     licenses := Seq("Apache 2" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt")),
     homepage := Some(url("https://github.com/spotify/scio")),
-    scmInfo := Some(
-      ScmInfo(url("https://github.com/spotify/scio"), "scm:git:git@github.com:spotify/scio.git")
-    ),
+    scmInfo := Some(ScmInfo(url("https://github.com/spotify/scio"), "scm:git:git@github.com:spotify/scio.git")),
     developers := List(
       Developer(
         id = "sinisa_lyh",
@@ -368,11 +364,7 @@ lazy val macroSettings = Def.settings(
   libraryDependencies ++= {
     VersionNumber(scalaVersion.value) match {
       case v if v.matchesSemVer(SemanticSelector("2.12.x")) =>
-        Seq(
-          compilerPlugin(
-            ("org.scalamacros" % "paradise" % scalaMacrosVersion).cross(CrossVersion.full)
-          )
-        )
+        Seq(compilerPlugin(("org.scalamacros" % "paradise" % scalaMacrosVersion).cross(CrossVersion.full)))
       case _ => Nil
     }
   },
@@ -380,9 +372,7 @@ lazy val macroSettings = Def.settings(
   scalacOptions += "-Xmacro-settings:cache-implicit-schemas=true"
 )
 
-lazy val directRunnerDependencies = Seq(
-  "org.apache.beam" % "beam-runners-direct-java" % beamVersion % Runtime
-)
+lazy val directRunnerDependencies = Seq("org.apache.beam" % "beam-runners-direct-java" % beamVersion % Runtime)
 lazy val dataflowRunnerDependencies = Seq(
   "org.apache.beam" % "beam-runners-google-cloud-dataflow-java" % beamVersion % Runtime
 )
@@ -403,27 +393,28 @@ lazy val flinkRunnerDependencies = Seq(
 lazy val beamRunners = settingKey[String]("beam runners")
 lazy val beamRunnersEval = settingKey[Seq[ModuleID]]("beam runners")
 
-def beamRunnerSettings: Seq[Setting[_]] = Seq(
-  beamRunners := "",
-  beamRunnersEval := {
-    Option(beamRunners.value)
-      .filter(_.nonEmpty)
-      .orElse(sys.props.get("beamRunners"))
-      .orElse(sys.env.get("BEAM_RUNNERS"))
-      .map(_.split(","))
-      .map {
-        _.flatMap {
-          case "DirectRunner"   => directRunnerDependencies
-          case "DataflowRunner" => dataflowRunnerDependencies
-          case "SparkRunner"    => sparkRunnerDependencies
-          case "FlinkRunner"    => flinkRunnerDependencies
-          case _                => Nil
-        }.toSeq
-      }
-      .getOrElse(directRunnerDependencies)
-  },
-  libraryDependencies ++= beamRunnersEval.value
-)
+def beamRunnerSettings: Seq[Setting[_]] =
+  Seq(
+    beamRunners := "",
+    beamRunnersEval := {
+      Option(beamRunners.value)
+        .filter(_.nonEmpty)
+        .orElse(sys.props.get("beamRunners"))
+        .orElse(sys.env.get("BEAM_RUNNERS"))
+        .map(_.split(","))
+        .map {
+          _.flatMap {
+            case "DirectRunner"   => directRunnerDependencies
+            case "DataflowRunner" => dataflowRunnerDependencies
+            case "SparkRunner"    => sparkRunnerDependencies
+            case "FlinkRunner"    => flinkRunnerDependencies
+            case _                => Nil
+          }.toSeq
+        }
+        .getOrElse(directRunnerDependencies)
+    },
+    libraryDependencies ++= beamRunnersEval.value
+  )
 
 ThisBuild / PB.protocVersion := protobufVersion
 lazy val scopedProtobufSettings = Def.settings(
@@ -469,15 +460,12 @@ lazy val java17Settings = sys.props("java.version") match {
 
 lazy val root: Project = Project("scio", file("."))
   .settings(commonSettings)
-  .settings(
-    publish / skip := true,
-    mimaPreviousArtifacts := Set.empty,
-    assembly / aggregate := false
-  )
+  .settings(publish / skip := true, mimaPreviousArtifacts := Set.empty, assembly / aggregate := false)
   .aggregate(
     `scio-avro`,
     `scio-cassandra3`,
     `scio-core`,
+    `scio-cosmosdb`,
     `scio-elasticsearch6`,
     `scio-elasticsearch7`,
     `scio-elasticsearch8`,
@@ -563,6 +551,25 @@ lazy val `scio-core`: Project = project
     buildInfoPackage := "com.spotify.scio"
   )
 
+lazy val `scio-cosmosdb`: Project = project
+  .in(file("scio-cosmosdb"))
+  .configs(IntegrationTest)
+  .settings(itSettings)
+  .settings(commonSettings)
+  .settings(publishSettings)
+  .dependsOn(`scio-core`, `scio-test` % "test;it")
+  .settings(
+    //scalacOptions ++= Seq("-deprecation", "-feature", "-unchecked", "-Xsource:3"), // , "-Ymacro-annotations"
+    scalacOptions ++= Seq("-Xsource:3"),
+    libraryDependencies ++= Seq(
+      "org.mongodb" % "bson" % bsonVersion,
+      "com.azure" % "azure-cosmos" % cosmosVersion,
+      "org.testcontainers" % "azure" % cosmosContainerVersion % IntegrationTest,
+      "com.outr" %% "scribe" % scribeVersion % IntegrationTest,
+      "com.outr" %% "scribe-slf4j" % scribeVersion % IntegrationTest
+    )
+  )
+
 lazy val `scio-test`: Project = project
   .in(file("scio-test"))
   .settings(commonSettings)
@@ -612,10 +619,7 @@ lazy val `scio-test`: Project = project
     )
   )
   .configs(IntegrationTest)
-  .dependsOn(
-    `scio-core` % "test->test;compile->compile;it->it",
-    `scio-avro` % "compile->test;it->it"
-  )
+  .dependsOn(`scio-core` % "test->test;compile->compile;it->it", `scio-avro` % "compile->test;it->it")
 
 lazy val `scio-macros`: Project = project
   .in(file("scio-macros"))
@@ -636,9 +640,7 @@ lazy val `scio-macros`: Project = project
 
 lazy val `scio-avro`: Project = project
   .in(file("scio-avro"))
-  .dependsOn(
-    `scio-core` % "compile;it->it"
-  )
+  .dependsOn(`scio-core` % "compile;it->it")
   .configs(IntegrationTest)
   .settings(commonSettings)
   .settings(publishSettings)
@@ -673,11 +675,7 @@ lazy val `scio-avro`: Project = project
 
 lazy val `scio-google-cloud-platform`: Project = project
   .in(file("scio-google-cloud-platform"))
-  .dependsOn(
-    `scio-core` % "compile;it->it",
-    `scio-avro` % "test",
-    `scio-test` % "test;it"
-  )
+  .dependsOn(`scio-core` % "compile;it->it", `scio-avro` % "test", `scio-test` % "test;it")
   .configs(IntegrationTest)
   .settings(commonSettings)
   .settings(publishSettings)
@@ -736,10 +734,7 @@ lazy val `scio-google-cloud-platform`: Project = project
 
 lazy val `scio-cassandra3`: Project = project
   .in(file("scio-cassandra/cassandra3"))
-  .dependsOn(
-    `scio-core`,
-    `scio-test` % "test;it"
-  )
+  .dependsOn(`scio-core`, `scio-test` % "test;it")
   .configs(IntegrationTest)
   .settings(commonSettings)
   .settings(publishSettings)
@@ -770,10 +765,7 @@ lazy val `scio-cassandra3`: Project = project
 
 lazy val `scio-elasticsearch6`: Project = project
   .in(file("scio-elasticsearch/es6"))
-  .dependsOn(
-    `scio-core`,
-    `scio-test` % "test"
-  )
+  .dependsOn(`scio-core`, `scio-test` % "test")
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
@@ -815,17 +807,11 @@ lazy val `scio-elasticsearch7`: Project = project
       "org.scalatest" %% "scalatest" % scalatestVersion % Test
     )
   )
-  .dependsOn(
-    `scio-core`,
-    `scio-test` % "test"
-  )
+  .dependsOn(`scio-core`, `scio-test` % "test")
 
 lazy val `scio-elasticsearch8`: Project = project
   .in(file("scio-elasticsearch/es8"))
-  .dependsOn(
-    `scio-core`,
-    `scio-test` % "test,it"
-  )
+  .dependsOn(`scio-core`, `scio-test` % "test,it")
   .configs(IntegrationTest)
   .settings(commonSettings)
   .settings(publishSettings)
@@ -908,10 +894,7 @@ lazy val `scio-extra`: Project = project
 
 lazy val `scio-grpc`: Project = project
   .in(file("scio-grpc"))
-  .dependsOn(
-    `scio-core`,
-    `scio-test` % "test"
-  )
+  .dependsOn(`scio-core`, `scio-test` % "test")
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(protobufSettings)
@@ -928,10 +911,7 @@ lazy val `scio-grpc`: Project = project
 
 lazy val `scio-jdbc`: Project = project
   .in(file("scio-jdbc"))
-  .dependsOn(
-    `scio-core`,
-    `scio-test` % "test"
-  )
+  .dependsOn(`scio-core`, `scio-test` % "test")
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
@@ -945,10 +925,7 @@ lazy val `scio-jdbc`: Project = project
 
 lazy val `scio-neo4j`: Project = project
   .in(file("scio-neo4j"))
-  .dependsOn(
-    `scio-core`,
-    `scio-test` % "test,it"
-  )
+  .dependsOn(`scio-core`, `scio-test` % "test,it")
   .configs(IntegrationTest)
   .settings(commonSettings)
   .settings(itSettings)
@@ -971,11 +948,7 @@ val ensureSourceManaged = taskKey[Unit]("ensureSourceManaged")
 
 lazy val `scio-parquet`: Project = project
   .in(file("scio-parquet"))
-  .dependsOn(
-    `scio-core`,
-    `scio-avro`,
-    `scio-test` % "test->test"
-  )
+  .dependsOn(`scio-core`, `scio-avro`, `scio-test` % "test->test")
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(
@@ -1020,11 +993,7 @@ lazy val `scio-parquet`: Project = project
 
 lazy val `scio-tensorflow`: Project = project
   .in(file("scio-tensorflow"))
-  .dependsOn(
-    `scio-avro`,
-    `scio-core`,
-    `scio-test` % "test->test"
-  )
+  .dependsOn(`scio-avro`, `scio-core`, `scio-test` % "test->test")
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(itSettings)
@@ -1079,10 +1048,7 @@ lazy val `scio-examples`: Project = project
   .settings(
     publish / skip := true,
     mimaPreviousArtifacts := Set.empty,
-    tpolecatExcludeOptions ++= Set(
-      ScalacOptions.warnUnusedLocals,
-      ScalacOptions.privateWarnUnusedLocals
-    ),
+    tpolecatExcludeOptions ++= Set(ScalacOptions.warnUnusedLocals, ScalacOptions.privateWarnUnusedLocals),
     libraryDependencies ++= Seq(
       // compile
       "com.chuusai" %% "shapeless" % shapelessVersion,
@@ -1146,11 +1112,7 @@ lazy val `scio-examples`: Project = project
 
 lazy val `scio-repl`: Project = project
   .in(file("scio-repl"))
-  .dependsOn(
-    `scio-core`,
-    `scio-google-cloud-platform`,
-    `scio-extra`
-  )
+  .dependsOn(`scio-core`, `scio-google-cloud-platform`, `scio-extra`)
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(assemblySettings)
@@ -1200,10 +1162,7 @@ lazy val `scio-repl`: Project = project
 lazy val `scio-jmh`: Project = project
   .in(file("scio-jmh"))
   .enablePlugins(JmhPlugin)
-  .dependsOn(
-    `scio-core`,
-    `scio-avro`
-  )
+  .dependsOn(`scio-core`, `scio-avro`)
   .settings(commonSettings)
   .settings(macroSettings)
   .settings(
@@ -1224,11 +1183,7 @@ lazy val `scio-jmh`: Project = project
 
 lazy val `scio-smb`: Project = project
   .in(file("scio-smb"))
-  .dependsOn(
-    `scio-core`,
-    `scio-test` % "test;it",
-    `scio-avro` % IntegrationTest
-  )
+  .dependsOn(`scio-core`, `scio-test` % "test;it", `scio-avro` % IntegrationTest)
   .configs(IntegrationTest)
   .settings(commonSettings)
   .settings(publishSettings)
@@ -1288,10 +1243,7 @@ lazy val `scio-smb`: Project = project
 
 lazy val `scio-redis`: Project = project
   .in(file("scio-redis"))
-  .dependsOn(
-    `scio-core`,
-    `scio-test` % "test"
-  )
+  .dependsOn(`scio-core`, `scio-test` % "test")
   .settings(commonSettings)
   .settings(publishSettings)
   .settings(itSettings)
@@ -1374,6 +1326,7 @@ lazy val siteSettings = Def.settings(
     `scio-avro`,
     `scio-google-cloud-platform`,
     `scio-cassandra3`,
+    `scio-cosmosdb`,
     `scio-elasticsearch8`,
     `scio-extra`,
     `scio-jdbc`,
