@@ -86,6 +86,10 @@ val algebirdVersion = "0.13.9"
 val algebraVersion = "2.9.0"
 val annoy4sVersion = "0.10.0"
 val annoyVersion = "0.2.6"
+val azureCoreVersion = "1.35.0"
+val azureDataTablesVersion = "12.3.6"
+val azureJacksonVersion = "1.2.25"
+val azureJsonXmlVersion = "1.0.0-beta.1"
 val breezeVersion = "2.1.0"
 val bsonVersion = "4.8.1"
 val cosmosVersion = "4.37.1"
@@ -238,7 +242,9 @@ val commonSettings = Def
     coverageHighlighting := true,
     licenses := Seq("Apache 2" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt")),
     homepage := Some(url("https://github.com/spotify/scio")),
-    scmInfo := Some(ScmInfo(url("https://github.com/spotify/scio"), "scm:git:git@github.com:spotify/scio.git")),
+    scmInfo := Some(
+      ScmInfo(url("https://github.com/spotify/scio"), "scm:git:git@github.com:spotify/scio.git")
+    ),
     developers := List(
       Developer(
         id = "sinisa_lyh",
@@ -364,7 +370,11 @@ lazy val macroSettings = Def.settings(
   libraryDependencies ++= {
     VersionNumber(scalaVersion.value) match {
       case v if v.matchesSemVer(SemanticSelector("2.12.x")) =>
-        Seq(compilerPlugin(("org.scalamacros" % "paradise" % scalaMacrosVersion).cross(CrossVersion.full)))
+        Seq(
+          compilerPlugin(
+            ("org.scalamacros" % "paradise" % scalaMacrosVersion).cross(CrossVersion.full)
+          )
+        )
       case _ => Nil
     }
   },
@@ -372,7 +382,9 @@ lazy val macroSettings = Def.settings(
   scalacOptions += "-Xmacro-settings:cache-implicit-schemas=true"
 )
 
-lazy val directRunnerDependencies = Seq("org.apache.beam" % "beam-runners-direct-java" % beamVersion % Runtime)
+lazy val directRunnerDependencies = Seq(
+  "org.apache.beam" % "beam-runners-direct-java" % beamVersion % Runtime
+)
 lazy val dataflowRunnerDependencies = Seq(
   "org.apache.beam" % "beam-runners-google-cloud-dataflow-java" % beamVersion % Runtime
 )
@@ -460,9 +472,14 @@ lazy val java17Settings = sys.props("java.version") match {
 
 lazy val root: Project = Project("scio", file("."))
   .settings(commonSettings)
-  .settings(publish / skip := true, mimaPreviousArtifacts := Set.empty, assembly / aggregate := false)
+  .settings(
+    publish / skip := true,
+    mimaPreviousArtifacts := Set.empty,
+    assembly / aggregate := false
+  )
   .aggregate(
     `scio-avro`,
+    `scio-aztables`,
     `scio-cassandra3`,
     `scio-core`,
     `scio-cosmosdb`,
@@ -551,6 +568,29 @@ lazy val `scio-core`: Project = project
     buildInfoPackage := "com.spotify.scio"
   )
 
+lazy val `scio-aztables`: Project = project
+  .in(file("scio-aztables"))
+  .configs(IntegrationTest)
+  .settings(itSettings)
+  .settings(commonSettings)
+  .settings(publishSettings)
+  .dependsOn(`scio-core`, `scio-test` % "test;it")
+  .settings(
+    // scalacOptions ++= Seq("-deprecation", "-feature", "-unchecked", "-Xsource:3"), // , "-Ymacro-annotations"
+    scalacOptions ++= Seq("-Xsource:3"),
+    libraryDependencies ++= Seq(
+      "org.apache.beam" % "beam-sdks-java-extensions-kryo" % beamVersion,
+      "com.azure" % "azure-data-tables" % azureDataTablesVersion,
+      "com.azure" % "azure-core" % azureCoreVersion,
+      "com.azure" % "azure-core-serializer-json-jackson" % azureJacksonVersion,
+      "com.azure" % "azure-json" % azureJsonXmlVersion,
+      "com.azure" % "azure-xml" % azureJsonXmlVersion,
+      // "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % jacksonVersion,
+      "com.outr" %% "scribe" % scribeVersion % "it,test",
+      "com.outr" %% "scribe-slf4j" % scribeVersion % "it,test"
+    )
+  )
+
 lazy val `scio-cosmosdb`: Project = project
   .in(file("scio-cosmosdb"))
   .configs(IntegrationTest)
@@ -559,7 +599,7 @@ lazy val `scio-cosmosdb`: Project = project
   .settings(publishSettings)
   .dependsOn(`scio-core`, `scio-test` % "test;it")
   .settings(
-    //scalacOptions ++= Seq("-deprecation", "-feature", "-unchecked", "-Xsource:3"), // , "-Ymacro-annotations"
+    // scalacOptions ++= Seq("-deprecation", "-feature", "-unchecked", "-Xsource:3"), // , "-Ymacro-annotations"
     scalacOptions ++= Seq("-Xsource:3"),
     libraryDependencies ++= Seq(
       "com.azure" % "azure-cosmos" % cosmosVersion,
@@ -622,7 +662,10 @@ lazy val `scio-test`: Project = project
     )
   )
   .configs(IntegrationTest)
-  .dependsOn(`scio-core` % "test->test;compile->compile;it->it", `scio-avro` % "compile->test;it->it")
+  .dependsOn(
+    `scio-core` % "test->test;compile->compile;it->it",
+    `scio-avro` % "compile->test;it->it"
+  )
 
 lazy val `scio-macros`: Project = project
   .in(file("scio-macros"))
@@ -1051,7 +1094,10 @@ lazy val `scio-examples`: Project = project
   .settings(
     publish / skip := true,
     mimaPreviousArtifacts := Set.empty,
-    tpolecatExcludeOptions ++= Set(ScalacOptions.warnUnusedLocals, ScalacOptions.privateWarnUnusedLocals),
+    tpolecatExcludeOptions ++= Set(
+      ScalacOptions.warnUnusedLocals,
+      ScalacOptions.privateWarnUnusedLocals
+    ),
     libraryDependencies ++= Seq(
       // compile
       "com.chuusai" %% "shapeless" % shapelessVersion,
